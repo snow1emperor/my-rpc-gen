@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package feeds;
+option go_package ="./feeds";
+option java_multiple_files = true;
+option java_outer_classname = "Feeds";
+
+import 'google/protobuf/any.proto';
+import 'google/protobuf/api.proto';
+import 'google/protobuf/empty.proto';
+import 'google/protobuf/descriptor.proto';
+import 'google/protobuf/duration.proto';
+import 'google/protobuf/field_mask.proto';
+import 'google/protobuf/source_context.proto';
+import 'google/protobuf/struct.proto';
+import 'google/protobuf/timestamp.proto';
+import 'google/protobuf/type.proto';
+import 'google/protobuf/wrappers.proto';
+
+
+
+enum TLConstructor {
+  CRC32_UNKNOWN = 0;    //1511592262
+  CRC32_feedGetFeedList = 1511592262;
+  CRC32_updateFeedList = 1511592263;
+  CRC32_feedReadHistory = 1511592264;
+  CRC32_getHistoryCounter = 1511592265;
+  CRC32_feedListState = 1511592266;
+  CRC32_feedItemState = 1511592267;
+  CRC32_updateFeedListStatus = 1511592268;
+  CRC32_historyCounterState = 1511592269;
+  CRC32_historyList = 1511592270;
+  CRC32_historyItem = 1511592271;
+  CRC32_responseEmpty = 1511592272;
+}
+
+
+message TLFeedGetFeedList {
+  TLConstructor constructor = 1;
+  int64 user_id = 2;
+}
+
+message TLUpdateFeedList {
+  TLConstructor constructor = 1;
+  repeated FeedItemState states = 2;
+}
+
+message TLFeedReadHistory {
+  TLConstructor constructor = 1;
+  int64 user_id = 2;
+}
+
+message TLGetHistoryCounter {
+  TLConstructor constructor = 1;
+  int64 user_id = 2;
+}
+
+message FeedListState {
+  TLConstructor constructor = 1;
+  repeated FeedItemState states = 2;
+}
+
+message FeedItemState {
+  string predicate_name = 1;
+  TLConstructor constructor = 2;
+  int64 chat_id = 3;
+  int32 peer_type = 4;
+  bool state = 5;
+}
+
+message UpdateFeedListStatus {
+  TLConstructor constructor = 1;
+  bool status = 2;
+  string error = 3;
+}
+
+message HistoryCounterState {
+  TLConstructor constructor = 1;
+  int32 count = 2;
+}
+
+message HistoryList {
+  TLConstructor constructor = 1;
+  repeated HistoryItem history_items = 2;
+}
+
+message HistoryItem {
+  string predicate_name = 1;
+  TLConstructor constructor = 2;
+}
+
+message ResponseEmpty {
+  TLConstructor constructor = 1;
+}
+
+
+service RPCFeeds {
+  // return all chats with bool for user { chat_id: int64, peer_type: int32, state: bool } req: { user_id: int64 }
+  rpc GetFeedList(TLFeedGetFeedList) returns(FeedListState);
+  // send array with { chat_id: int64, peer_type: int32, state: bool }
+  rpc UpdateFeedList(TLUpdateFeedList) returns(UpdateFeedListStatus);
+  // for user req: { user_id: int64 }
+  rpc ReadHistory(TLFeedReadHistory) returns (HistoryList);
+  // for user req: { user_id: int64 }
+  rpc GetHistoryCounter(TLGetHistoryCounter) returns(HistoryCounterState);
+}
