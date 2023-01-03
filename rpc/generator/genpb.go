@@ -38,6 +38,10 @@ func (g *Generator) setPbDir(ctx DirContext, c *ZRpcContext) error {
 	if len(pbDir) == 0 {
 		return fmt.Errorf("pg.go is not found under %q", c.GoOutput)
 	}
+	if c.IsGogoPlugin {
+		ctx.SetPbDir(pbDir, pbDir)
+		return nil
+	}
 	grpcDir, err := findPbFile(c.GrpcOutput, true)
 	if err != nil {
 		return err

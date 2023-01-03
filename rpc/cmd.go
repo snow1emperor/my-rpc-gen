@@ -53,7 +53,7 @@ func init() {
 
 	newCmd.Flags().StringSliceVar(&cli.VarStringSliceGoOpt, "go_opt", nil, "")
 	newCmd.Flags().StringSliceVar(&cli.VarStringSliceGoGRPCOpt, "go-grpc_opt", nil, "")
-	newCmd.Flags().StringVar(&cli.VarStringStyle, "style", "gozero", "The file "+
+	newCmd.Flags().StringVar(&cli.VarStringStyle, "style", "goZero", "The file "+
 		"naming format, see [https://github.com/zeromicro/go-zero/tree/master/tools/goctl/config/readme.md]")
 	newCmd.Flags().BoolVar(&cli.VarBoolIdea, "idea", false, "Whether the command "+
 		"execution environment is from idea plugin.")
@@ -72,6 +72,8 @@ func init() {
 
 	protocCmd.Flags().BoolVarP(&cli.VarBoolMultiple, "multiple", "m", false,
 		"Generated in multiple rpc service mode")
+	protocCmd.Flags().StringVar(&cli.VarStringGogoDst, "gogo_dst", "", "")
+	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGogoOut, "gogo_out", nil, "")
 	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGoOut, "go_out", nil, "")
 	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGoGRPCOut, "go-grpc_out", nil, "")
 	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGoOpt, "go_opt", nil, "")

@@ -8,9 +8,9 @@ import (
 )
 
 func main() {
-	log.Println("Start")
+	log.Println(" Start")
 	logx.Disable()
 	load.Disable()
 	cmd.Execute()
-	log.Println("Exit")
+	log.Println(" Exit")
 }

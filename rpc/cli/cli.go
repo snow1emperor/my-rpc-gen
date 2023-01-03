@@ -22,8 +22,12 @@ var (
 	VarStringRemote string
 	// VarStringBranch describes the git branch.
 	VarStringBranch string
+	// VarStringGogoDst describes the git branch.
+	VarStringGogoDst string
 	// VarStringSliceGoOut describes the go output.
 	VarStringSliceGoOut []string
+	// VarStringSliceGogoOut describes the go output.
+	VarStringSliceGogoOut []string
 	// VarStringSliceGoGRPCOut describes the grpc output.
 	VarStringSliceGoGRPCOut []string
 	// VarStringSlicePlugin describes the protoc plugin.
@@ -100,6 +104,7 @@ func RPCNew(_ *cobra.Command, args []string) error {
 	}
 
 	g := generator.NewGenerator(style, verbose)
+	//log.Printf("cli: %+v\n", ctx)
 	return g.Generate(&ctx)
 }
 

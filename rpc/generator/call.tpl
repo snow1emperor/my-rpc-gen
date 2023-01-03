@@ -15,17 +15,17 @@ import (
 type (
 	{{.alias}}
 
-	{{.serviceName}} interface {
+	{{.serviceName}}Client interface {
 		{{.interface}}
 	}
 
-	default{{.serviceName}} struct {
+	default{{.serviceName}}Client struct {
 		cli zrpc.Client
 	}
 )
 
-func New{{.serviceName}}(cli zrpc.Client) {{.serviceName}} {
-	return &default{{.serviceName}}{
+func New{{.serviceName}}Client(cli zrpc.Client) {{.serviceName}}Client {
+	return &default{{.serviceName}}Client{
 		cli: cli,
 	}
 }

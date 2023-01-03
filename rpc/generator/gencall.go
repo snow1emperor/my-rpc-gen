@@ -23,7 +23,7 @@ const (
 
 	callFunctionTemplate = `
 {{if .hasComment}}{{.comment}}{{end}}
-func (m *default{{.serviceName}}) {{.method}}(ctx context.Context{{if .hasReq}}, in *{{.pbRequest}}{{end}}, opts ...grpc.CallOption) ({{if .notStream}}*{{.pbResponse}}, {{else}}{{.streamBody}},{{end}} error) {
+func (m *default{{.serviceName}}Client) {{.method}}(ctx context.Context{{if .hasReq}}, in *{{.pbRequest}}{{end}}, opts ...grpc.CallOption) ({{if .notStream}}*{{.pbResponse}}, {{else}}{{.streamBody}},{{end}} error) {
 	client := {{if .isCallPkgSameToGrpcPkg}}{{else}}{{.package}}.{{end}}New{{.rpcServiceName}}Client(m.cli.Conn())
 	return client.{{.method}}(ctx{{if .hasReq}}, in{{end}}, opts...)
 }
@@ -121,10 +121,7 @@ func (g *Generator) genCallInCompatibility(ctx DirContext, proto parser.Proto,
 	isCallPkgSameToPbPkg := ctx.GetCall().Filename == ctx.GetPb().Filename
 	isCallPkgSameToGrpcPkg := ctx.GetCall().Filename == ctx.GetProtoGo().Filename
 
-	callFilename, err := format.FileNamingFormat(cfg.NamingFormat, service.Name)
-	if err != nil {
-		return err
-	}
+	callFilename := ctx.GetServiceName().Lower() + "_client"
 
 	filename := filepath.Join(dir.Filename, fmt.Sprintf("%s.go", callFilename))
 	functions, err := g.genFunction(proto.PbPackage, service, isCallPkgSameToGrpcPkg)
@@ -163,10 +160,10 @@ func (g *Generator) genCallInCompatibility(ctx DirContext, proto parser.Proto,
 		"name":           callFilename,
 		"alias":          strings.Join(aliasKeys, pathx.NL),
 		"head":           head,
-		"filePackage":    dir.Base,
+		"filePackage":    ctx.GetServiceName().Lower() + "_client",
 		"pbPackage":      pbPackage,
 		"protoGoPackage": protoGoPackage,
-		"serviceName":    stringx.From(service.Name).ToCamel(),
+		"serviceName":    ctx.GetServiceName().Title(),
 		"functions":      strings.Join(functions, pathx.NL),
 		"interface":      strings.Join(iFunctions, pathx.NL),
 	}, filename, true)
@@ -212,7 +209,7 @@ func (g *Generator) genFunction(goPackage string, service parser.Service,
 				parser.CamelCase(rpc.Name), "Client")
 		}
 		buffer, err := util.With("sharedFn").Parse(text).Execute(map[string]interface{}{
-			"serviceName":            stringx.From(service.Name).ToCamel(),
+			"serviceName":            stringx.From(goPackage).ToCamel(),
 			"rpcServiceName":         parser.CamelCase(service.Name),
 			"method":                 parser.CamelCase(rpc.Name),
 			"package":                goPackage,

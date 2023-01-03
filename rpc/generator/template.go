@@ -14,11 +14,17 @@ const (
 	configTemplateFileFile            = "config.tpl"
 	etcTemplateFileFile               = "etc.tpl"
 	logicTemplateFileFile             = "logic.tpl"
+	logicTemplateCoreFile             = "core.tpl"
 	logicFuncTemplateFileFile         = "logic-func.tpl"
 	mainTemplateFile                  = "main.tpl"
+	cmdTemplateFile                   = "cmd.tpl"
 	serverTemplateFile                = "server.tpl"
+	serverMainTemplateFile            = "mainserver.tpl"
+	serverSrvTemplateFile             = "service.tpl"
+	serverRpcTemplateFile             = "grpc.tpl"
 	serverFuncTemplateFile            = "server-func.tpl"
 	svcTemplateFile                   = "svc.tpl"
+	daoTemplateFile                   = "dao.tpl"
 	rpcTemplateFile                   = "template.tpl"
 )
 
@@ -27,6 +33,7 @@ var templates = map[string]string{
 	configTemplateFileFile:    configTemplate,
 	etcTemplateFileFile:       etcTemplate,
 	logicTemplateFileFile:     logicTemplate,
+	logicTemplateCoreFile:     logicTemplateCoreFile,
 	logicFuncTemplateFileFile: logicFunctionTemplate,
 	mainTemplateFile:          mainTemplate,
 	serverTemplateFile:        serverTemplate,

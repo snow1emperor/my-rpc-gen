@@ -2,13 +2,14 @@ package cli
 
 import (
 	"errors"
+	"fmt"
+	"github.com/zeromicro/go-zero/tools/goctl/util"
+	"github.com/zeromicro/go-zero/tools/goctl/util/pathx"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/zeromicro/go-zero/tools/goctl/util"
-	"github.com/zeromicro/go-zero/tools/goctl/util/pathx"
 	"my-rpc-gen/rpc/generator"
 )
 
@@ -21,12 +22,14 @@ var (
 // ZRPC generates grpc code directly by protoc and generates
 // zrpc code by goctl.
 func ZRPC(_ *cobra.Command, args []string) error {
+	if err, ok := gogoGen(args); ok {
+		return err
+	}
 	protocArgs := wrapProtocCmd("protoc", args)
 	pwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-
 	source := args[0]
 	grpcOutList := VarStringSliceGoGRPCOut
 	goOutList := VarStringSliceGoOut
@@ -36,6 +39,7 @@ func ZRPC(_ *cobra.Command, args []string) error {
 	remote := VarStringRemote
 	branch := VarStringBranch
 	verbose := VarBoolVerbose
+
 	if len(grpcOutList) == 0 {
 		return errInvalidGrpcOutput
 	}
@@ -100,10 +104,42 @@ func ZRPC(_ *cobra.Command, args []string) error {
 	ctx.GoOutput = goOut
 	ctx.GrpcOutput = grpcOut
 	ctx.IsGooglePlugin = isGooglePlugin
+
 	ctx.Output = zrpcOut
 	ctx.ProtocCmd = strings.Join(protocArgs, " ")
 	g := generator.NewGenerator(style, verbose)
-	return g.Generate(&ctx)
+	if err := g.Generate(&ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func gogoGen(args []string) (error, bool) {
+	if len(VarStringSliceGogoOut) > 0 {
+		protocArgs := wrapProtocCmd("protoc", args)
+		source := args[0]
+		zrpcOut := VarStringZRPCOut
+		style := VarStringStyle
+		verbose := VarBoolVerbose
+		var ctx generator.ZRpcContext
+		ctx.Multiple = VarBoolMultiple
+		ctx.Src = source
+
+		ctx.GoOutput = VarStringGogoDst
+		ctx.GrpcOutput = VarStringGogoDst
+		ctx.ProtoGenGoDir = VarStringGogoDst
+		ctx.ProtoGenGrpcDir = VarStringGogoDst
+		ctx.IsGogoPlugin = true
+		ctx.Output = zrpcOut
+		ctx.ProtocCmd = strings.Join(protocArgs, " ")
+		g := generator.NewGenerator(style, verbose)
+		//log.Printf("zrpc: %+v\n", ctx)
+		if err := g.Generate(&ctx); err != nil {
+			return err, true
+		}
+		return nil, true
+	}
+	return nil, false
 }
 
 func wrapProtocCmd(name string, args []string) []string {
@@ -119,6 +155,9 @@ func wrapProtocCmd(name string, args []string) []string {
 	}
 	for _, goOut := range VarStringSliceGoOut {
 		ret = append(ret, "--go_out", goOut)
+	}
+	if len(VarStringSliceGogoOut) > 0 {
+		ret = append(ret, fmt.Sprintf("--gogo_out=%s,:%s", strings.Join(VarStringSliceGogoOut, ","), VarStringGogoDst))
 	}
 	for _, goGRPCOut := range VarStringSliceGoGRPCOut {
 		ret = append(ret, "--go-grpc_out", goGRPCOut)

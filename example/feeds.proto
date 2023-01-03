@@ -95,7 +95,7 @@ message ResponseEmpty {
 
 
 service RPCFeeds {
-  // return all chats with bool for user { chat_id: int64, peer_type: int32, state: bool } req: { user_id: int64 }
+  // @return all chats with bool for user { chat_id: int64, peer_type: int32, state: bool } req: { user_id: int64 }
   rpc GetFeedList(TLFeedGetFeedList) returns(FeedListState);
   // send array with { chat_id: int64, peer_type: int32, state: bool }
   rpc UpdateFeedList(TLUpdateFeedList) returns(UpdateFeedListStatus);

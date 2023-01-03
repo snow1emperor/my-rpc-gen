@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -20,7 +19,7 @@ type RunFunc func(string, string, ...*bytes.Buffer) (string, error)
 // which can support macOS, Windows, and Linux operating systems.
 // Other operating systems are currently not supported
 func Run(arg, dir string, in ...*bytes.Buffer) (string, error) {
-	log.Println("here", arg, "dir", dir)
+	//log.Println("here ", arg, "dir", dir)
 	goos := runtime.GOOS
 	var cmd *exec.Cmd
 	switch goos {
@@ -42,13 +41,13 @@ func Run(arg, dir string, in ...*bytes.Buffer) (string, error) {
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err := cmd.Run()
-	log.Printf("%+v\n", cmd)
+	//log.Printf(" %+v\n", cmd)
 	if err != nil {
 		if stderr.Len() > 0 {
 			return "", errors.New(strings.TrimSuffix(stderr.String(), pathx.NL))
 		}
 		return "", err
 	}
-	log.Println("_", stdout.String())
+	//log.Println(" _", stdout.String())
 	return strings.TrimSuffix(stdout.String(), pathx.NL), nil
 }
