@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/snow1emperor/my-rpc-gen/rpc/execx"
 	"github.com/zeromicro/go-zero/tools/goctl/pkg/goctl"
 	"github.com/zeromicro/go-zero/tools/goctl/pkg/golang"
 	"github.com/zeromicro/go-zero/tools/goctl/util/env"
-	"my-rpc-gen/rpc/execx"
 )
 
 const (

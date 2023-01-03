@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"my-rpc-gen/rpc/execx"
+	"github.com/snow1emperor/my-rpc-gen/rpc/execx"
 )
 
 // GenPb generates the pb.go file, which is a layer of packaging for protoc to generate gprc,

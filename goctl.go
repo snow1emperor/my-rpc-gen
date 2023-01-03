@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/snow1emperor/my-rpc-gen/cmd"
 	"github.com/zeromicro/go-zero/core/load"
 	"github.com/zeromicro/go-zero/core/logx"
-	"my-rpc-gen/cmd"
 )
 
 func main() {

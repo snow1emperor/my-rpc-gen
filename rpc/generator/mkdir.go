@@ -4,11 +4,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/snow1emperor/my-rpc-gen/rpc/parser"
 	conf "github.com/zeromicro/go-zero/tools/goctl/config"
 	"github.com/zeromicro/go-zero/tools/goctl/util/ctx"
 	"github.com/zeromicro/go-zero/tools/goctl/util/pathx"
 	"github.com/zeromicro/go-zero/tools/goctl/util/stringx"
-	"my-rpc-gen/rpc/parser"
 )
 
 const (

@@ -1,8 +1,8 @@
 package rpc
 
 import (
+	"github.com/snow1emperor/my-rpc-gen/rpc/cli"
 	"github.com/spf13/cobra"
-	"my-rpc-gen/rpc/cli"
 )
 
 var (

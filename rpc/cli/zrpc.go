@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/snow1emperor/my-rpc-gen/rpc/generator"
 	"github.com/spf13/cobra"
-	"my-rpc-gen/rpc/generator"
 )
 
 var (

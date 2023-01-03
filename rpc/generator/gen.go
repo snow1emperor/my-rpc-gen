@@ -3,10 +3,10 @@ package generator
 import (
 	"path/filepath"
 
+	"github.com/snow1emperor/my-rpc-gen/rpc/parser"
 	"github.com/zeromicro/go-zero/tools/goctl/util/console"
 	"github.com/zeromicro/go-zero/tools/goctl/util/ctx"
 	"github.com/zeromicro/go-zero/tools/goctl/util/pathx"
-	"my-rpc-gen/rpc/parser"
 )
 
 type ZRpcContext struct {

@@ -9,6 +9,8 @@ import (
 	"text/template"
 
 	"github.com/logrusorgru/aurora"
+	"github.com/snow1emperor/my-rpc-gen/internal/version"
+	"github.com/snow1emperor/my-rpc-gen/rpc"
 	"github.com/spf13/cobra"
 	"github.com/withfig/autocomplete-tools/integrations/cobra"
 	"github.com/zeromicro/go-zero/tools/goctl/api"
@@ -21,8 +23,6 @@ import (
 	"github.com/zeromicro/go-zero/tools/goctl/quickstart"
 	"github.com/zeromicro/go-zero/tools/goctl/tpl"
 	"github.com/zeromicro/go-zero/tools/goctl/upgrade"
-	"my-rpc-gen/internal/version"
-	"my-rpc-gen/rpc"
 )
 
 const (
