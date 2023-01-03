@@ -24,6 +24,8 @@ var (
 	VarStringBranch string
 	// VarStringGogoDst describes the git branch.
 	VarStringGogoDst string
+	// VarStringCommandsPkg describes the git branch.
+	VarStringCommandsPkg string
 	// VarStringSliceGoOut describes the go output.
 	VarStringSliceGoOut []string
 	// VarStringSliceGogoOut describes the go output.
@@ -87,6 +89,7 @@ func RPCNew(_ *cobra.Command, args []string) error {
 
 	var ctx generator.ZRpcContext
 	ctx.Src = src
+	ctx.VarStringCommandsPkg = VarStringCommandsPkg
 	ctx.GoOutput = filepath.Dir(src)
 	ctx.GrpcOutput = filepath.Dir(src)
 	ctx.IsGooglePlugin = true

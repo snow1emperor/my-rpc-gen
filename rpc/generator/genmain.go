@@ -65,7 +65,7 @@ func (g *Generator) GenMain(ctx DirContext, proto parser.Proto, cfg *conf.Config
 		serverImport := fmt.Sprintf(`"%v"`, ctx.GetServer().Package)
 
 		imports := collection.NewSet()
-		imports.AddStr(serverImport)
+		imports.AddStr(serverImport, fmt.Sprintf(`"%s"`, c.VarStringCommandsPkg))
 		serverFilename := "main"
 		serverFile := filepath.Join(ctx.GetCmd().Filename, serverFilename+".go")
 		text, err := pathx.LoadTemplate(category, cmdTemplateFile, cmdTemplate)

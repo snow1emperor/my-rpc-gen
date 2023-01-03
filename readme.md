@@ -50,7 +50,8 @@ go run $GO_CTR_PATH rpc protoc $SRC_PATH \
   -I=$GOGOPROTO_PATH \
   --gogo_dst=$DST_DIR \
   --gogo_out="plugins=grpc\,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/api.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/empty.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/field_mask.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/source_context.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/type.proto=github.com/gogo/protobuf/types"\
-  --zrpc_out=$DST_DIR
+  --zrpc_out=$DST_DIR \
+  --commands_pkg="github.com/snow1emperor/marmota/pkg/commands"
 ```
 
 ### Clear

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/teamgram/marmota/pkg/commands"
 
 	{{.imports}}
 )

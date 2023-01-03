@@ -30,6 +30,8 @@ type ZRpcContext struct {
 	Output string
 	// Multiple is the flag to indicate whether the proto file is generated in multiple mode.
 	Multiple bool
+	// VarStringCommandsPkg
+	VarStringCommandsPkg string
 }
 
 // Generate generates a rpc service, through the proto file,

@@ -72,6 +72,7 @@ func init() {
 
 	protocCmd.Flags().BoolVarP(&cli.VarBoolMultiple, "multiple", "m", false,
 		"Generated in multiple rpc service mode")
+	protocCmd.Flags().StringVar(&cli.VarStringCommandsPkg, "commands_pkg", "github.com/snow1emperor/marmota/pkg/commands", "")
 	protocCmd.Flags().StringVar(&cli.VarStringGogoDst, "gogo_dst", "", "")
 	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGogoOut, "gogo_out", nil, "")
 	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGoOut, "go_out", nil, "")
