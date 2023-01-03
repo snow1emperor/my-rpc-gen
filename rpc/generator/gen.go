@@ -32,6 +32,8 @@ type ZRpcContext struct {
 	Multiple bool
 	// VarStringCommandsPkg
 	VarStringCommandsPkg string
+	// VarStringMTProtPkg
+	VarStringMTProtPkg string
 }
 
 // Generate generates a rpc service, through the proto file,

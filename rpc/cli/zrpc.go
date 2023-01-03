@@ -130,6 +130,7 @@ func gogoGen(args []string) (error, bool) {
 		ctx.ProtoGenGoDir = VarStringGogoDst
 		ctx.ProtoGenGrpcDir = VarStringGogoDst
 		ctx.VarStringCommandsPkg = VarStringCommandsPkg
+		ctx.VarStringMTProtPkg = VarStringMTProtPkg
 		ctx.IsGogoPlugin = true
 		ctx.Output = zrpcOut
 		ctx.ProtocCmd = strings.Join(protocArgs, " ")

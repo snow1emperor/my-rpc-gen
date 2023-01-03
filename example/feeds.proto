@@ -103,4 +103,6 @@ service RPCFeeds {
   rpc ReadHistory(TLFeedReadHistory) returns (HistoryList);
   // for user req: { user_id: int64 }
   rpc GetHistoryCounter(TLGetHistoryCounter) returns(HistoryCounterState);
+
+//  rpc GetHistoryCounter2(TLGetHistoryCounter) returns(google.protobuf.Empty);
 }

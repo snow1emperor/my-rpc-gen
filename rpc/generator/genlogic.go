@@ -34,14 +34,13 @@ func (g *Generator) GenLogic(ctx DirContext, proto parser.Proto, cfg *conf.Confi
 	c *ZRpcContext) error {
 	if !c.Multiple {
 
-		return g.genLogicInCompatibility(ctx, proto, cfg)
+		return g.genLogicInCompatibility(ctx, proto, cfg, c)
 	}
 
 	return g.genLogicGroup(ctx, proto, cfg)
 }
 
-func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto,
-	cfg *conf.Config) error {
+func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, cfg *conf.Config, c *ZRpcContext) error {
 	dir := ctx.GetLogic()
 	service := proto.Service[0].Service.Name
 
@@ -52,7 +51,7 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto,
 		imports := collection.NewSet()
 		imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetSvc().Package))
 		//imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetPb().Package))
-		imports.AddStr(fmt.Sprintf(`"%v"`, "github.com/teamgram/proto/mtproto/rpc/metadata"))
+		imports.AddStr(fmt.Sprintf(`"%s"`, c.VarStringMTProtPkg))
 		text, err := pathx.LoadTemplate(category, logicTemplateCoreFile, coreTemplate)
 		if err != nil {
 			return err

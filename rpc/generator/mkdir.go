@@ -80,10 +80,10 @@ func mkdir(ctx *ctx.ProjectContext, proto parser.Proto, _ *conf.Config, c *ZRpcC
 	svcDir := filepath.Join(internalDir, "svc")
 	pbDir := filepath.Join(ctx.WorkDir, proto.GoPackage)
 	protoGoDir := pbDir
-	if c != nil {
-		pbDir = c.ProtoGenGrpcDir
-		protoGoDir = c.ProtoGenGoDir
-	}
+	//if c != nil {
+	//	pbDir = c.ProtoGenGrpcDir
+	//	protoGoDir = c.ProtoGenGoDir
+	//}
 
 	getChildPackage := func(parent, childPath string) (string, error) {
 		child := strings.TrimPrefix(childPath, parent)
@@ -252,18 +252,18 @@ func mkdir(ctx *ctx.ProjectContext, proto parser.Proto, _ *conf.Config, c *ZRpcC
 }
 
 func (d *defaultDirContext) SetPbDir(pbDir, grpcDir string) {
-	d.inner[pb] = Dir{
-		Filename: pbDir,
-		Package:  filepath.ToSlash(filepath.Join(d.ctx.Path, strings.TrimPrefix(pbDir, d.ctx.Dir))),
-		Base:     filepath.Base(pbDir),
-	}
-
-	d.inner[protoGo] = Dir{
-		Filename: grpcDir,
-		Package: filepath.ToSlash(filepath.Join(d.ctx.Path,
-			strings.TrimPrefix(grpcDir, d.ctx.Dir))),
-		Base: filepath.Base(grpcDir),
-	}
+	//d.inner[pb] = Dir{
+	//	Filename: pbDir,
+	//	Package:  filepath.ToSlash(filepath.Join(d.ctx.Path, strings.TrimPrefix(pbDir, d.ctx.Dir))),
+	//	Base:     filepath.Base(pbDir),
+	//}
+	//
+	//d.inner[protoGo] = Dir{
+	//	Filename: grpcDir,
+	//	Package: filepath.ToSlash(filepath.Join(d.ctx.Path,
+	//		strings.TrimPrefix(grpcDir, d.ctx.Dir))),
+	//	Base: filepath.Base(grpcDir),
+	//}
 }
 
 func (d *defaultDirContext) GetCall() Dir {

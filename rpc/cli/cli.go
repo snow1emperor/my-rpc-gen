@@ -26,6 +26,8 @@ var (
 	VarStringGogoDst string
 	// VarStringCommandsPkg describes the git branch.
 	VarStringCommandsPkg string
+	// VarStringMTProtPkg describes the git branch.
+	VarStringMTProtPkg string
 	// VarStringSliceGoOut describes the go output.
 	VarStringSliceGoOut []string
 	// VarStringSliceGogoOut describes the go output.
