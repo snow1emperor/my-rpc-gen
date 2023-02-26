@@ -2,6 +2,7 @@ package generator
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -38,13 +39,13 @@ var callTemplateText string
 func (g *Generator) GenCall(ctx DirContext, proto parser.Proto, cfg *conf.Config,
 	c *ZRpcContext) error {
 	if !c.Multiple {
-		return g.genCallInCompatibility(ctx, proto, cfg)
+		return g.genCallInCompatibility(ctx, proto, cfg, c)
 	}
 
-	return g.genCallGroup(ctx, proto, cfg)
+	return g.genCallGroup(ctx, proto, cfg, c)
 }
 
-func (g *Generator) genCallGroup(ctx DirContext, proto parser.Proto, cfg *conf.Config) error {
+func (g *Generator) genCallGroup(ctx DirContext, proto parser.Proto, cfg *conf.Config, c *ZRpcContext) error {
 	dir := ctx.GetCall()
 	head := util.GetHead(proto.Name)
 	for _, service := range proto.Service {
@@ -63,12 +64,12 @@ func (g *Generator) genCallGroup(ctx DirContext, proto parser.Proto, cfg *conf.C
 		isCallPkgSameToPbPkg := childDir == ctx.GetProtoGo().Filename
 		isCallPkgSameToGrpcPkg := childDir == ctx.GetProtoGo().Filename
 
-		functions, err := g.genFunction(proto.PbPackage, service, isCallPkgSameToGrpcPkg)
+		functions, err := g.genFunction(proto.PbPackage, service, isCallPkgSameToGrpcPkg, c.VarStringTypeMap)
 		if err != nil {
 			return err
 		}
 
-		iFunctions, err := g.getInterfaceFuncs(proto.PbPackage, service, isCallPkgSameToGrpcPkg)
+		iFunctions, err := g.getInterfaceFuncs(proto.PbPackage, service, isCallPkgSameToGrpcPkg, c.VarStringTypeMap)
 		if err != nil {
 			return err
 		}
@@ -78,12 +79,76 @@ func (g *Generator) genCallGroup(ctx DirContext, proto parser.Proto, cfg *conf.C
 			return err
 		}
 
+		imports := collection.NewSet()
 		alias := collection.NewSet()
 		if !isCallPkgSameToPbPkg {
-			for _, item := range proto.Message {
-				msgName := getMessageName(*item.Message)
-				alias.AddStr(fmt.Sprintf("%s = %s", parser.CamelCase(msgName),
-					fmt.Sprintf("%s.%s", proto.PbPackage, parser.CamelCase(msgName))))
+			var impList []string
+			var typeMap = c.VarStringTypeMap
+			for _, rpc := range proto.Service[0].RPC {
+
+				request := func() string {
+					var mess = rpc.RequestType
+					if strings.Contains(mess, "google.protobuf") {
+						if path, ok := typeMap["types"]; ok {
+							impList = append(impList, path)
+						}
+						typeName := parser.CamelCase(strings.Trim(mess, "google.protobuf."))
+						return fmt.Sprintf("%s = %s", typeName,
+							fmt.Sprintf("%s.%s", "types", typeName))
+					} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, proto.PbPackage+".") {
+						values := strings.Split(mess, ".")
+						pkgKey, typeName := values[0], values[1]
+						if path, ok := typeMap[pkgKey]; ok {
+							impList = append(impList, path)
+							return fmt.Sprintf("%s = %s", typeName, mess)
+						} else {
+							err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+							return ""
+						}
+					} else if strings.HasPrefix(mess, proto.PbPackage+".") {
+						mess = strings.Split(mess, ".")[1]
+					}
+					typeName := fmt.Sprintf("%s.%s", proto.PbPackage, parser.CamelCase(mess))
+					return fmt.Sprintf("%s = %s", parser.CamelCase(mess), typeName)
+				}()
+				if err != nil {
+					return err
+				}
+				alias.AddStr(request)
+
+				response := func() string {
+					var mess = rpc.ReturnsType
+					if strings.Contains(mess, "google.protobuf") {
+						if path, ok := typeMap["types"]; ok {
+							impList = append(impList, path)
+						}
+						typeName := parser.CamelCase(strings.Trim(mess, "google.protobuf."))
+						return fmt.Sprintf("%s = %s", typeName,
+							fmt.Sprintf("%s.%s", "types", typeName))
+					} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, proto.PbPackage+".") {
+						values := strings.Split(mess, ".")
+						pkgKey, typeName := values[0], values[1]
+						if path, ok := typeMap[pkgKey]; ok {
+							impList = append(impList, path)
+							return fmt.Sprintf("%s = %s", typeName, mess)
+						} else {
+							err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+							return ""
+						}
+					} else if strings.HasPrefix(mess, proto.PbPackage+".") {
+						mess = strings.Split(mess, ".")[1]
+					}
+					typeName := fmt.Sprintf("%s.%s", proto.PbPackage, parser.CamelCase(mess))
+					return fmt.Sprintf("%s = %s", parser.CamelCase(mess), typeName)
+				}()
+				if err != nil {
+					return err
+				}
+				alias.AddStr(response)
+				//msgName := getMessageName(*item.Message)
+			}
+			for _, item := range impList {
+				imports.AddStr(fmt.Sprintf(`"%v"`, item))
 			}
 		}
 
@@ -106,6 +171,7 @@ func (g *Generator) genCallGroup(ctx DirContext, proto parser.Proto, cfg *conf.C
 			"serviceName":    stringx.From(service.Name).ToCamel(),
 			"functions":      strings.Join(functions, pathx.NL),
 			"interface":      strings.Join(iFunctions, pathx.NL),
+			"imports":        strings.Join(imports.KeysStr(), pathx.NL),
 		}, filename, true); err != nil {
 			return err
 		}
@@ -113,8 +179,7 @@ func (g *Generator) genCallGroup(ctx DirContext, proto parser.Proto, cfg *conf.C
 	return nil
 }
 
-func (g *Generator) genCallInCompatibility(ctx DirContext, proto parser.Proto,
-	cfg *conf.Config) error {
+func (g *Generator) genCallInCompatibility(ctx DirContext, proto parser.Proto, cfg *conf.Config, c *ZRpcContext) error {
 	dir := ctx.GetCall()
 	service := proto.Service[0]
 	head := util.GetHead(proto.Name)
@@ -124,12 +189,12 @@ func (g *Generator) genCallInCompatibility(ctx DirContext, proto parser.Proto,
 	callFilename := ctx.GetServiceName().Lower() + "_client"
 
 	filename := filepath.Join(dir.Filename, fmt.Sprintf("%s.go", callFilename))
-	functions, err := g.genFunction(proto.PbPackage, service, isCallPkgSameToGrpcPkg)
+	functions, err := g.genFunction(proto.PbPackage, service, isCallPkgSameToGrpcPkg, c.VarStringTypeMap)
 	if err != nil {
 		return err
 	}
 
-	iFunctions, err := g.getInterfaceFuncs(proto.PbPackage, service, isCallPkgSameToGrpcPkg)
+	iFunctions, err := g.getInterfaceFuncs(proto.PbPackage, service, isCallPkgSameToGrpcPkg, c.VarStringTypeMap)
 	if err != nil {
 		return err
 	}
@@ -139,12 +204,76 @@ func (g *Generator) genCallInCompatibility(ctx DirContext, proto parser.Proto,
 		return err
 	}
 
+	imports := collection.NewSet()
 	alias := collection.NewSet()
 	if !isCallPkgSameToPbPkg {
-		for _, item := range proto.Message {
-			msgName := getMessageName(*item.Message)
-			alias.AddStr(fmt.Sprintf("%s = %s", parser.CamelCase(msgName),
-				fmt.Sprintf("%s.%s", proto.PbPackage, parser.CamelCase(msgName))))
+		var impList []string
+		var typeMap = c.VarStringTypeMap
+		for _, rpc := range proto.Service[0].RPC {
+
+			request := func() string {
+				var mess = rpc.RequestType
+				if strings.Contains(mess, "google.protobuf") {
+					if path, ok := typeMap["types"]; ok {
+						impList = append(impList, path)
+					}
+					typeName := parser.CamelCase(strings.Trim(mess, "google.protobuf."))
+					return fmt.Sprintf("%s = %s", typeName,
+						fmt.Sprintf("%s.%s", "types", typeName))
+				} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, proto.PbPackage+".") {
+					values := strings.Split(mess, ".")
+					pkgKey, typeName := values[0], values[1]
+					if path, ok := typeMap[pkgKey]; ok {
+						impList = append(impList, path)
+						return fmt.Sprintf("%s = %s", typeName, mess)
+					} else {
+						err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+						return ""
+					}
+				} else if strings.HasPrefix(mess, proto.PbPackage+".") {
+					mess = strings.Split(mess, ".")[1]
+				}
+				typeName := fmt.Sprintf("%s.%s", proto.PbPackage, parser.CamelCase(mess))
+				return fmt.Sprintf("%s = %s", parser.CamelCase(mess), typeName)
+			}()
+			if err != nil {
+				return err
+			}
+			alias.AddStr(request)
+
+			response := func() string {
+				var mess = rpc.ReturnsType
+				if strings.Contains(mess, "google.protobuf") {
+					if path, ok := typeMap["types"]; ok {
+						impList = append(impList, path)
+					}
+					typeName := parser.CamelCase(strings.Trim(mess, "google.protobuf."))
+					return fmt.Sprintf("%s = %s", typeName,
+						fmt.Sprintf("%s.%s", "types", typeName))
+				} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, proto.PbPackage+".") {
+					values := strings.Split(mess, ".")
+					pkgKey, typeName := values[0], values[1]
+					if path, ok := typeMap[pkgKey]; ok {
+						impList = append(impList, path)
+						return fmt.Sprintf("%s = %s", typeName, mess)
+					} else {
+						err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+						return ""
+					}
+				} else if strings.HasPrefix(mess, proto.PbPackage+".") {
+					mess = strings.Split(mess, ".")[1]
+				}
+				typeName := fmt.Sprintf("%s.%s", proto.PbPackage, parser.CamelCase(mess))
+				return fmt.Sprintf("%s = %s", parser.CamelCase(mess), typeName)
+			}()
+			if err != nil {
+				return err
+			}
+			alias.AddStr(response)
+			//msgName := getMessageName(*item.Message)
+		}
+		for _, item := range impList {
+			imports.AddStr(fmt.Sprintf(`"%v"`, item))
 		}
 	}
 
@@ -166,6 +295,7 @@ func (g *Generator) genCallInCompatibility(ctx DirContext, proto parser.Proto,
 		"serviceName":    ctx.GetServiceName().Title(),
 		"functions":      strings.Join(functions, pathx.NL),
 		"interface":      strings.Join(iFunctions, pathx.NL),
+		"imports":        strings.Join(imports.KeysStr(), pathx.NL),
 	}, filename, true)
 }
 
@@ -191,8 +321,7 @@ func getMessageName(msg proto.Message) string {
 	return strings.Join(list, "_")
 }
 
-func (g *Generator) genFunction(goPackage string, service parser.Service,
-	isCallPkgSameToGrpcPkg bool) ([]string, error) {
+func (g *Generator) genFunction(goPackage string, service parser.Service, isCallPkgSameToGrpcPkg bool, typeMap map[string]string) ([]string, error) {
 	functions := make([]string, 0)
 
 	for _, rpc := range service.RPC {
@@ -208,13 +337,56 @@ func (g *Generator) genFunction(goPackage string, service parser.Service,
 			streamServer = fmt.Sprintf("%s_%s%s", parser.CamelCase(service.Name),
 				parser.CamelCase(rpc.Name), "Client")
 		}
+
+		request := func() string {
+			var mess = rpc.RequestType
+			if strings.Contains(mess, "google.protobuf") {
+				return parser.CamelCase(strings.Trim(mess, "google.protobuf."))
+			} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
+				pkgKey := strings.Split(mess, ".")[0]
+				if _, ok := typeMap[pkgKey]; ok {
+					return parser.CamelCase(strings.Trim(mess, pkgKey+"."))
+				} else {
+					err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+					return ""
+				}
+			} else if strings.HasPrefix(mess, goPackage+".") {
+				mess = strings.Split(mess, ".")[1]
+			}
+			return parser.CamelCase(mess)
+		}()
+		if err != nil {
+			return nil, err
+		}
+
+		response := func() string {
+			var mess = rpc.ReturnsType
+			if strings.Contains(mess, "google.protobuf") {
+				return parser.CamelCase(strings.Trim(mess, "google.protobuf."))
+			} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
+				pkgKey := strings.Split(mess, ".")[0]
+				if _, ok := typeMap[pkgKey]; ok {
+					return parser.CamelCase(strings.Trim(mess, pkgKey+"."))
+				} else {
+					err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+					return ""
+				}
+			} else if strings.HasPrefix(mess, goPackage+".") {
+				mess = strings.Split(mess, ".")[1]
+			}
+			return parser.CamelCase(mess)
+		}()
+		if err != nil {
+			return nil, err
+		}
+
 		buffer, err := util.With("sharedFn").Parse(text).Execute(map[string]interface{}{
 			"serviceName":            stringx.From(goPackage).ToCamel(),
 			"rpcServiceName":         parser.CamelCase(service.Name),
 			"method":                 parser.CamelCase(rpc.Name),
 			"package":                goPackage,
-			"pbRequest":              parser.CamelCase(rpc.RequestType),
-			"pbResponse":             parser.CamelCase(rpc.ReturnsType),
+			"pbRequest":              request,
+			"pbResponse":             response,
 			"hasComment":             len(comment) > 0,
 			"comment":                comment,
 			"hasReq":                 !rpc.StreamsRequest,
@@ -232,8 +404,7 @@ func (g *Generator) genFunction(goPackage string, service parser.Service,
 	return functions, nil
 }
 
-func (g *Generator) getInterfaceFuncs(goPackage string, service parser.Service,
-	isCallPkgSameToGrpcPkg bool) ([]string, error) {
+func (g *Generator) getInterfaceFuncs(goPackage string, service parser.Service, isCallPkgSameToGrpcPkg bool, typeMap map[string]string) ([]string, error) {
 	functions := make([]string, 0)
 
 	for _, rpc := range service.RPC {
@@ -250,15 +421,57 @@ func (g *Generator) getInterfaceFuncs(goPackage string, service parser.Service,
 			streamServer = fmt.Sprintf("%s_%s%s", parser.CamelCase(service.Name),
 				parser.CamelCase(rpc.Name), "Client")
 		}
+		request := func() string {
+			var mess = rpc.RequestType
+			if strings.Contains(mess, "google.protobuf") {
+				return parser.CamelCase(strings.Trim(mess, "google.protobuf."))
+			} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
+				pkgKey := strings.Split(mess, ".")[0]
+				if _, ok := typeMap[pkgKey]; ok {
+					return parser.CamelCase(strings.Trim(mess, pkgKey+"."))
+				} else {
+					err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+					return ""
+				}
+			} else if strings.HasPrefix(mess, goPackage+".") {
+				mess = strings.Split(mess, ".")[1]
+			}
+			return parser.CamelCase(mess)
+		}()
+		if err != nil {
+			return nil, err
+		}
+
+		response := func() string {
+			var mess = rpc.ReturnsType
+			if strings.Contains(mess, "google.protobuf") {
+				return parser.CamelCase(strings.Trim(mess, "google.protobuf."))
+			} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
+				pkgKey := strings.Split(mess, ".")[0]
+				if _, ok := typeMap[pkgKey]; ok {
+					return parser.CamelCase(strings.Trim(mess, pkgKey+"."))
+				} else {
+					err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+					return ""
+				}
+			} else if strings.HasPrefix(mess, goPackage+".") {
+				mess = strings.Split(mess, ".")[1]
+			}
+			return parser.CamelCase(mess)
+		}()
+		if err != nil {
+			return nil, err
+		}
+
 		buffer, err := util.With("interfaceFn").Parse(text).Execute(
 			map[string]interface{}{
 				"hasComment": len(comment) > 0,
 				"comment":    comment,
 				"method":     parser.CamelCase(rpc.Name),
 				"hasReq":     !rpc.StreamsRequest,
-				"pbRequest":  parser.CamelCase(rpc.RequestType),
+				"pbRequest":  request,
 				"notStream":  !rpc.StreamsRequest && !rpc.StreamsReturns,
-				"pbResponse": parser.CamelCase(rpc.ReturnsType),
+				"pbResponse": response,
 				"streamBody": streamServer,
 			})
 		if err != nil {

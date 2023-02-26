@@ -2,6 +2,7 @@ package generator
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -20,13 +21,13 @@ const functionTemplate = `
 func (s *Service) {{.method}} ({{if .notStream}}ctx context.Context,{{if .hasReq}} in {{.request}}{{end}}{{else}}{{if .hasReq}} in {{.request}},{{end}}stream {{.streamBody}}{{end}}) ({{if .notStream}}{{.response}},{{end}}error) {
 	c := {{.logicPkg}}.New{{.logicName}}({{if .notStream}}ctx,{{else}}stream.Context(),{{end}}s.svcCtx)
 
-	c.Logger.Debugf("{{.handler}} - metadata: %s, request: %s", c.MD.DebugString(), in.String())
+	c.Logger.Debugf("{{.handler}} - metadata: %s, request: %s", DebugString(c.MD), DebugString(in))
 	r, err := c.{{.method}}({{if .hasReq}}in{{if .stream}} ,stream{{end}}{{else}}{{if .stream}}stream{{end}}{{end}})
 	if err != nil {
 		return nil, err
 	}
 
-	c.Logger.Debugf("{{.handler}} - reply: %+v", r)
+	c.Logger.Debugf("{{.handler}} - reply: %s", DebugString(r))
 	return r, err
 }
 `
@@ -50,10 +51,10 @@ func (g *Generator) GenServer(ctx DirContext, proto parser.Proto, cfg *conf.Conf
 		return g.genServerInCompatibility(ctx, proto, cfg, c)
 	}
 
-	return g.genServerGroup(ctx, proto, cfg)
+	return g.genServerGroup(ctx, proto, cfg, c)
 }
 
-func (g *Generator) genServerGroup(ctx DirContext, proto parser.Proto, cfg *conf.Config) error {
+func (g *Generator) genServerGroup(ctx DirContext, proto parser.Proto, cfg *conf.Config, c *ZRpcContext) error {
 	dir := ctx.GetServer()
 	for _, service := range proto.Service {
 		var (
@@ -88,9 +89,13 @@ func (g *Generator) genServerGroup(ctx DirContext, proto parser.Proto, cfg *conf
 
 		head := util.GetHead(proto.Name)
 
-		funcList, err := g.genFunctions(proto.PbPackage, service, true)
+		funcList, impList, err := g.genFunctions(proto.PbPackage, service, true, c.VarStringTypeMap)
 		if err != nil {
 			return err
+		}
+
+		for _, item := range impList {
+			imports.AddStr(fmt.Sprintf(`"%v"`, item))
 		}
 
 		text, err := pathx.LoadTemplate(category, serverTemplateFile, serverTemplate)
@@ -218,9 +223,13 @@ func (g *Generator) genServerInCompatibility(ctx DirContext, proto parser.Proto,
 	//}
 	serverFilename := ctx.GetServiceName().Lower() + "_service_impl"
 	serverFile := filepath.Join(dir.Filename, serverFilename+".go")
-	funcList, err := g.genFunctions(proto.PbPackage, service, false)
+	funcList, impList, err := g.genFunctions(proto.PbPackage, service, false, c.VarStringTypeMap)
 	if err != nil {
 		return err
+	}
+
+	for _, item := range impList {
+		imports.AddStr(fmt.Sprintf(`"%v"`, item))
 	}
 
 	text, err := pathx.LoadTemplate(category, serverTemplateFile, serverTemplate)
@@ -247,15 +256,16 @@ func (g *Generator) genServerInCompatibility(ctx DirContext, proto parser.Proto,
 	}, serverFile, true)
 }
 
-func (g *Generator) genFunctions(goPackage string, service parser.Service, multiple bool) ([]string, error) {
+func (g *Generator) genFunctions(goPackage string, service parser.Service, multiple bool, typeMap map[string]string) ([]string, []string, error) {
 	var (
 		functionList []string
 		logicPkg     string
+		impList      []string
 	)
 	for _, rpc := range service.RPC {
 		text, err := pathx.LoadTemplate(category, serverFuncTemplateFile, functionTemplate)
 		if err != nil {
-			return nil, err
+			return nil, impList, err
 		}
 
 		//var logicName string
@@ -269,6 +279,56 @@ func (g *Generator) genFunctions(goPackage string, service parser.Service, multi
 			//logicName = fmt.Sprintf("%s", stringx.From(rpc.Name).ToCamel())
 		}
 
+		request := func() string {
+			var mess = rpc.RequestType
+			if strings.Contains(mess, "google.protobuf") {
+				if path, ok := typeMap["types"]; ok {
+					impList = append(impList, path)
+				}
+				return fmt.Sprintf("*%s.%s", "types", parser.CamelCase(strings.Trim(mess, "google.protobuf.")))
+			} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
+				pkgKey := strings.Split(mess, ".")[0]
+				if path, ok := typeMap[pkgKey]; ok {
+					impList = append(impList, path)
+					return fmt.Sprintf("*%s", mess)
+				} else {
+					err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+					return ""
+				}
+			} else if strings.HasPrefix(mess, goPackage+".") {
+				mess = strings.Split(mess, ".")[1]
+			}
+			return fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(mess))
+		}()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		response := func() string {
+			var mess = rpc.ReturnsType
+			if strings.Contains(mess, "google.protobuf") {
+				if path, ok := typeMap["types"]; ok {
+					impList = append(impList, path)
+				}
+				return fmt.Sprintf("*%s.%s", "types", parser.CamelCase(strings.Trim(mess, "google.protobuf.")))
+			} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
+				pkgKey := strings.Split(mess, ".")[0]
+				if path, ok := typeMap[pkgKey]; ok {
+					impList = append(impList, path)
+					return fmt.Sprintf("*%s", mess)
+				} else {
+					err = errors.New(fmt.Sprintf("request package %s must defined in flags type_map", pkgKey))
+					return ""
+				}
+			} else if strings.HasPrefix(mess, goPackage+".") {
+				mess = strings.Split(mess, ".")[1]
+			}
+			return fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(mess))
+		}()
+		if err != nil {
+			return nil, nil, err
+		}
+
 		comment := parser.GetComment(rpc.Doc())
 		streamServer := fmt.Sprintf("%s.%s_%s%s", goPackage, parser.CamelCase(service.Name),
 			parser.CamelCase(rpc.Name), "Server")
@@ -277,8 +337,8 @@ func (g *Generator) genFunctions(goPackage string, service parser.Service, multi
 			"logicName":  stringx.From(goPackage).ToCamel(),
 			"method":     parser.CamelCase(rpc.Name),
 			"handler":    goPackage + "." + rpc.Name,
-			"request":    fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(rpc.RequestType)),
-			"response":   fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(rpc.ReturnsType)),
+			"request":    request,
+			"response":   response,
 			"hasComment": len(comment) > 0,
 			"comment":    comment,
 			"hasReq":     !rpc.StreamsRequest,
@@ -288,10 +348,10 @@ func (g *Generator) genFunctions(goPackage string, service parser.Service, multi
 			"logicPkg":   logicPkg,
 		})
 		if err != nil {
-			return nil, err
+			return nil, impList, err
 		}
 
 		functionList = append(functionList, buffer.String())
 	}
-	return functionList, nil
+	return functionList, impList, nil
 }

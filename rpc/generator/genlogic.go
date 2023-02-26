@@ -2,6 +2,7 @@ package generator
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -37,7 +38,7 @@ func (g *Generator) GenLogic(ctx DirContext, proto parser.Proto, cfg *conf.Confi
 		return g.genLogicInCompatibility(ctx, proto, cfg, c)
 	}
 
-	return g.genLogicGroup(ctx, proto, cfg)
+	return g.genLogicGroup(ctx, proto, cfg, c)
 }
 
 func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, cfg *conf.Config, c *ZRpcContext) error {
@@ -51,7 +52,7 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, 
 		imports := collection.NewSet()
 		imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetSvc().Package))
 		//imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetPb().Package))
-		imports.AddStr(fmt.Sprintf(`"%s"`, c.VarStringMTProtPkg))
+		//imports.AddStr(fmt.Sprintf(`"%s"`, c.VarStringMTProtPkg))
 		text, err := pathx.LoadTemplate(category, logicTemplateCoreFile, coreTemplate)
 		if err != nil {
 			return err
@@ -72,10 +73,10 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, 
 		if err != nil {
 			return err
 		}
-		logicFilename = fmt.Sprintf("%s.%s_handler", ctx.GetServiceName().Source(), logicFilename)
+		logicFilename = fmt.Sprintf("%s_%s_handler", ctx.GetServiceName().Source(), logicFilename)
 
 		filename := filepath.Join(dir.Filename, logicFilename+".go")
-		functions, err := g.genLogicFunction(service, proto.PbPackage, logicName, rpc)
+		functions, impList, err := g.genLogicFunction(service, proto.PbPackage, logicName, rpc, c.VarStringTypeMap)
 		if err != nil {
 			return err
 		}
@@ -83,6 +84,9 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, 
 		imports := collection.NewSet()
 		//imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetSvc().Package))
 		imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetPb().Package))
+		for _, item := range impList {
+			imports.AddStr(fmt.Sprintf(`"%v"`, item))
+		}
 		text, err := pathx.LoadTemplate(category, logicTemplateFileFile, logicTemplate)
 		if err != nil {
 			return err
@@ -100,7 +104,7 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, 
 	return nil
 }
 
-func (g *Generator) genLogicGroup(ctx DirContext, proto parser.Proto, cfg *conf.Config) error {
+func (g *Generator) genLogicGroup(ctx DirContext, proto parser.Proto, cfg *conf.Config, c *ZRpcContext) error {
 	dir := ctx.GetLogic()
 	for _, item := range proto.Service {
 		serviceName := item.Name
@@ -128,7 +132,7 @@ func (g *Generator) genLogicGroup(ctx DirContext, proto parser.Proto, cfg *conf.
 			}
 
 			filename = filepath.Join(dir.Filename, serviceDir, logicFilename+".go")
-			functions, err := g.genLogicFunction(serviceName, proto.PbPackage, logicName, rpc)
+			functions, impList, err := g.genLogicFunction(serviceName, proto.PbPackage, logicName, rpc, c.VarStringTypeMap)
 			if err != nil {
 				return err
 			}
@@ -136,6 +140,9 @@ func (g *Generator) genLogicGroup(ctx DirContext, proto parser.Proto, cfg *conf.
 			imports := collection.NewSet()
 			imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetSvc().Package))
 			imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetPb().Package))
+			for _, item := range impList {
+				imports.AddStr(fmt.Sprintf(`"%v"`, item))
+			}
 			text, err := pathx.LoadTemplate(category, logicTemplateFileFile, logicTemplate)
 			if err != nil {
 				return err
@@ -154,36 +161,87 @@ func (g *Generator) genLogicGroup(ctx DirContext, proto parser.Proto, cfg *conf.
 	return nil
 }
 
-func (g *Generator) genLogicFunction(serviceName, goPackage, logicName string,
-	rpc *parser.RPC) (string,
-	error) {
+func (g *Generator) genLogicFunction(serviceName, goPackage, logicName string, rpc *parser.RPC, typeMap map[string]string) (string, []string, error) {
+	var impList []string
+
 	functions := make([]string, 0)
 	text, err := pathx.LoadTemplate(category, logicFuncTemplateFileFile, logicFunctionTemplate)
 	if err != nil {
-		return "", err
+		return "", impList, err
 	}
 
 	comment := parser.GetComment(rpc.Doc())
 	streamServer := fmt.Sprintf("%s.%s_%s%s", goPackage, parser.CamelCase(serviceName),
 		parser.CamelCase(rpc.Name), "Server")
+
+	request := func() string {
+		var mess = rpc.RequestType
+		if strings.Contains(mess, "google.protobuf") {
+			if path, ok := typeMap["types"]; ok {
+				impList = append(impList, path)
+			}
+			return fmt.Sprintf("*%s.%s", "types", parser.CamelCase(strings.Trim(mess, "google.protobuf.")))
+		} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
+			pkgKey := strings.Split(mess, ".")[0]
+			if path, ok := typeMap[pkgKey]; ok {
+				impList = append(impList, path)
+				return fmt.Sprintf("*%s", mess)
+			} else {
+				err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
+				return ""
+			}
+		} else if strings.HasPrefix(mess, goPackage+".") {
+			mess = strings.Split(mess, ".")[1]
+		}
+		return fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(mess))
+	}()
+	if err != nil {
+		return "", nil, err
+	}
+
+	response := func() string {
+		var mess = rpc.ReturnsType
+		if strings.Contains(mess, "google.protobuf") {
+			if path, ok := typeMap["types"]; ok {
+				impList = append(impList, path)
+			}
+			return fmt.Sprintf("%s.%s", "types", parser.CamelCase(strings.Trim(mess, "google.protobuf.")))
+		} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
+			pkgKey := strings.Split(mess, ".")[0]
+			if path, ok := typeMap[pkgKey]; ok {
+				impList = append(impList, path)
+				return mess
+			} else {
+				err = errors.New(fmt.Sprintf("request package %s must defined in flags type_map", pkgKey))
+				return ""
+			}
+		} else if strings.HasPrefix(mess, goPackage+".") {
+			mess = strings.Split(mess, ".")[1]
+		}
+		return fmt.Sprintf("%s.%s", goPackage, parser.CamelCase(mess))
+	}()
+	if err != nil {
+		return "", nil, err
+	}
+
 	buffer, err := util.With("fun").Parse(text).Execute(map[string]interface{}{
 		"packageName":  parser.CamelCase(goPackage),
 		"logicName":    logicName,
 		"method":       parser.CamelCase(rpc.Name),
 		"hasReq":       !rpc.StreamsRequest,
-		"request":      fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(rpc.RequestType)),
+		"request":      request,
 		"hasReply":     !rpc.StreamsRequest && !rpc.StreamsReturns,
-		"response":     fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(rpc.ReturnsType)),
-		"responseType": fmt.Sprintf("%s.%s", goPackage, parser.CamelCase(rpc.ReturnsType)),
+		"response":     fmt.Sprintf("*%s", response),
+		"responseType": response,
 		"stream":       rpc.StreamsRequest || rpc.StreamsReturns,
 		"streamBody":   streamServer,
 		"hasComment":   len(comment) > 0,
 		"comment":      comment,
 	})
 	if err != nil {
-		return "", err
+		return "", impList, err
 	}
 
 	functions = append(functions, buffer.String())
-	return strings.Join(functions, pathx.NL), nil
+	return strings.Join(functions, pathx.NL), impList, nil
 }

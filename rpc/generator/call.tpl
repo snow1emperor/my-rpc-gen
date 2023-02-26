@@ -5,6 +5,8 @@ package {{.filePackage}}
 import (
 	"context"
 
+	{{.imports}}
+
 	{{.pbPackage}}
 	{{if ne .pbPackage .protoGoPackage}}{{.protoGoPackage}}{{end}}
 

@@ -72,8 +72,9 @@ func init() {
 
 	//protocCmd.Flags().BoolVarP(&cli.VarBoolMultiple, "multiple", "m", false,
 	//	"Generated in multiple rpc service mode")
-	protocCmd.Flags().StringVar(&cli.VarStringMTProtPkg, "mtproto_pkg", "github.com/teamgram/proto/mtproto/rpc/metadata", "mtproto package")
-	protocCmd.Flags().StringVar(&cli.VarStringCommandsPkg, "commands_pkg", "github.com/teamgram/marmota/pkg/commands", "commands package")
+	protocCmd.Flags().StringVar(&cli.VarStringTypeMap, "type_map", "", "type map")
+	protocCmd.Flags().StringVar(&cli.VarStringTypes, "types", "github.com/gogo/protobuf/types", "types package")
+	protocCmd.Flags().StringVar(&cli.VarStringCommandsPkg, "commands_pkg", "", "commands package")
 	protocCmd.Flags().StringVar(&cli.VarStringGogoDst, "gogo_dst", "", "source to generate")
 	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGogoOut, "gogo_out", nil, "gogo settings")
 	//protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGoOut, "go_out", nil, "")
@@ -83,7 +84,7 @@ func init() {
 	//protocCmd.Flags().StringSliceVar(&cli.VarStringSlicePlugin, "plugin", nil, "")
 	protocCmd.Flags().StringSliceVarP(&cli.VarStringSliceProtoPath, "proto_path", "I", nil, "proto files path")
 	protocCmd.Flags().StringVar(&cli.VarStringZRPCOut, "zrpc_out", "", "The zrpc output directory")
-	protocCmd.Flags().StringVar(&cli.VarStringStyle, "style", "gozero", "")
+	protocCmd.Flags().StringVar(&cli.VarStringStyle, "style", "goZero", "")
 	//protocCmd.Flags().StringVar(&cli.VarStringHome, "home", "", "The goctl home "+
 	//	"path of the template, --home and --remote cannot be set at the same time, if they are, "+
 	//	"--remote has higher priority")

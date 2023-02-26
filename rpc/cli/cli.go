@@ -26,8 +26,10 @@ var (
 	VarStringGogoDst string
 	// VarStringCommandsPkg describes the git branch.
 	VarStringCommandsPkg string
-	// VarStringMTProtPkg describes the git branch.
-	VarStringMTProtPkg string
+	// VarStringTypes describes the git branch.
+	VarStringTypes string
+	// VarStringTypeMap describes the git branch.
+	VarStringTypeMap string
 	// VarStringSliceGoOut describes the go output.
 	VarStringSliceGoOut []string
 	// VarStringSliceGogoOut describes the go output.
@@ -92,6 +94,22 @@ func RPCNew(_ *cobra.Command, args []string) error {
 	var ctx generator.ZRpcContext
 	ctx.Src = src
 	ctx.VarStringCommandsPkg = VarStringCommandsPkg
+	ctx.VarStringTypeMap = make(map[string]string)
+	if len(VarStringTypes) != 0 {
+		ctx.VarStringTypeMap["types"] = VarStringTypes
+	}
+	if len(VarStringTypeMap) != 0 {
+		valueList := strings.Split(VarStringTypeMap, ",")
+		for _, val := range valueList {
+			if len(val) != 0 && strings.Contains(val, "=") {
+				kv := strings.Split(val, "=")
+				key, val := kv[0], kv[1]
+				if len(key) != 0 && len(val) != 0 {
+					ctx.VarStringTypeMap[key] = val
+				}
+			}
+		}
+	}
 	ctx.GoOutput = filepath.Dir(src)
 	ctx.GrpcOutput = filepath.Dir(src)
 	ctx.IsGooglePlugin = true

@@ -16,6 +16,7 @@ import 'google/protobuf/struct.proto';
 import 'google/protobuf/timestamp.proto';
 import 'google/protobuf/type.proto';
 import 'google/protobuf/wrappers.proto';
+import 'my_svc.proto';
 
 
 
@@ -96,13 +97,13 @@ message ResponseEmpty {
 
 service RPCFeeds {
   // @return all chats with bool for user { chat_id: int64, peer_type: int32, state: bool } req: { user_id: int64 }
-  rpc GetFeedList(TLFeedGetFeedList) returns(FeedListState);
+  rpc GetFeedList(my_svc.PingMess) returns(FeedListState);
   // send array with { chat_id: int64, peer_type: int32, state: bool }
-  rpc UpdateFeedList(TLUpdateFeedList) returns(UpdateFeedListStatus);
+  rpc UpdateFeedList(TLUpdateFeedList) returns(my_svc.PingMess);
   // for user req: { user_id: int64 }
-  rpc ReadHistory(TLFeedReadHistory) returns (HistoryList);
+  rpc ReadHistory(TLFeedReadHistory) returns (google.protobuf.Empty);
   // for user req: { user_id: int64 }
-  rpc GetHistoryCounter(TLGetHistoryCounter) returns(HistoryCounterState);
+  rpc GetHistoryCounter(google.protobuf.Empty) returns(HistoryCounterState);
 
 //  rpc GetHistoryCounter2(TLGetHistoryCounter) returns(google.protobuf.Empty);
 }

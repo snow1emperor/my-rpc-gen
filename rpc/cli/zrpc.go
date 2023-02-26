@@ -130,7 +130,22 @@ func gogoGen(args []string) (error, bool) {
 		ctx.ProtoGenGoDir = VarStringGogoDst
 		ctx.ProtoGenGrpcDir = VarStringGogoDst
 		ctx.VarStringCommandsPkg = VarStringCommandsPkg
-		ctx.VarStringMTProtPkg = VarStringMTProtPkg
+		ctx.VarStringTypeMap = make(map[string]string)
+		if len(VarStringTypes) != 0 {
+			ctx.VarStringTypeMap["types"] = VarStringTypes
+		}
+		if len(VarStringTypeMap) != 0 {
+			valueList := strings.Split(VarStringTypeMap, ",")
+			for _, val := range valueList {
+				if len(val) != 0 && strings.Contains(val, "=") {
+					kv := strings.Split(val, "=")
+					key, val := kv[0], kv[1]
+					if len(key) != 0 && len(val) != 0 {
+						ctx.VarStringTypeMap[key] = val
+					}
+				}
+			}
+		}
 		ctx.IsGogoPlugin = true
 		ctx.Output = zrpcOut
 		ctx.ProtocCmd = strings.Join(protocArgs, " ")
