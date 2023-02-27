@@ -85,11 +85,11 @@ func (g *Generator) genServerGroup(ctx DirContext, proto parser.Proto, cfg *conf
 		pbImport := fmt.Sprintf(`"%v"`, ctx.GetPb().Package)
 
 		imports := collection.NewSet()
-		imports.AddStr(logicImport, svcImport, pbImport)
+		imports.AddStr(logicImport, svcImport)
 
 		head := util.GetHead(proto.Name)
 
-		funcList, impList, err := g.genFunctions(proto.PbPackage, service, true, c.VarStringTypeMap)
+		funcList, impList, err := g.genFunctions(proto.PbPackage, service, true, c.VarStringTypeMap, pbImport)
 		if err != nil {
 			return err
 		}
@@ -135,9 +135,7 @@ func (g *Generator) genServerInCompatibility(ctx DirContext, proto parser.Proto,
 	pbImport := fmt.Sprintf(`"%v"`, ctx.GetPb().Package)
 
 	imports := collection.NewSet()
-	imports.AddStr(logicImport,
-		//svcImport,
-		pbImport)
+	imports.AddStr(logicImport) //svcImport,
 
 	head := util.GetHead(proto.Name)
 	service := proto.Service[0]
@@ -162,7 +160,7 @@ func (g *Generator) genServerInCompatibility(ctx DirContext, proto parser.Proto,
 			"imports":   strings.Join(imports.KeysStr(), pathx.NL),
 			"funcs":     "",
 			"notStream": notStream,
-		}, serverFile, false)
+		}, serverFile, true)
 	}(); err != nil {
 		return err
 	}
@@ -223,7 +221,7 @@ func (g *Generator) genServerInCompatibility(ctx DirContext, proto parser.Proto,
 	//}
 	serverFilename := ctx.GetServiceName().Lower() + "_service_impl"
 	serverFile := filepath.Join(dir.Filename, serverFilename+".go")
-	funcList, impList, err := g.genFunctions(proto.PbPackage, service, false, c.VarStringTypeMap)
+	funcList, impList, err := g.genFunctions(proto.PbPackage, service, false, c.VarStringTypeMap, pbImport)
 	if err != nil {
 		return err
 	}
@@ -256,7 +254,7 @@ func (g *Generator) genServerInCompatibility(ctx DirContext, proto parser.Proto,
 	}, serverFile, true)
 }
 
-func (g *Generator) genFunctions(goPackage string, service parser.Service, multiple bool, typeMap map[string]string) ([]string, []string, error) {
+func (g *Generator) genFunctions(goPackage string, service parser.Service, multiple bool, typeMap map[string]string, pbImport string) ([]string, []string, error) {
 	var (
 		functionList []string
 		logicPkg     string
@@ -285,7 +283,8 @@ func (g *Generator) genFunctions(goPackage string, service parser.Service, multi
 				if path, ok := typeMap["types"]; ok {
 					impList = append(impList, path)
 				}
-				return fmt.Sprintf("*%s.%s", "types", parser.CamelCase(strings.Trim(mess, "google.protobuf.")))
+				values := strings.Split(mess, ".")
+				return fmt.Sprintf("*%s.%s", "types", values[len(values)-1])
 			} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
 				pkgKey := strings.Split(mess, ".")[0]
 				if path, ok := typeMap[pkgKey]; ok {
@@ -298,6 +297,7 @@ func (g *Generator) genFunctions(goPackage string, service parser.Service, multi
 			} else if strings.HasPrefix(mess, goPackage+".") {
 				mess = strings.Split(mess, ".")[1]
 			}
+			impList = append(impList, pbImport)
 			return fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(mess))
 		}()
 		if err != nil {
@@ -310,7 +310,8 @@ func (g *Generator) genFunctions(goPackage string, service parser.Service, multi
 				if path, ok := typeMap["types"]; ok {
 					impList = append(impList, path)
 				}
-				return fmt.Sprintf("*%s.%s", "types", parser.CamelCase(strings.Trim(mess, "google.protobuf.")))
+				values := strings.Split(mess, ".")
+				return fmt.Sprintf("*%s.%s", "types", values[len(values)-1])
 			} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
 				pkgKey := strings.Split(mess, ".")[0]
 				if path, ok := typeMap[pkgKey]; ok {
@@ -323,6 +324,7 @@ func (g *Generator) genFunctions(goPackage string, service parser.Service, multi
 			} else if strings.HasPrefix(mess, goPackage+".") {
 				mess = strings.Split(mess, ".")[1]
 			}
+			impList = append(impList, pbImport)
 			return fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(mess))
 		}()
 		if err != nil {

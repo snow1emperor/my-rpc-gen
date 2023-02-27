@@ -5,8 +5,9 @@ GOGOPROTO_PATH=$GOPATH/pkg/mod/github.com/gogo/protobuf@v1.3.2/protobuf
 
 CUSTOM_PATH=example/.
 
-SRC_PATH=example/feeds.proto
-DST_DIR=./example/feeds
+SRC_PATH=example/idgen.proto
+DST_DIR=./example/idgen
+
 
 $GO_CTR_PATH rpc protoc $SRC_PATH \
   -I=${PWD} \

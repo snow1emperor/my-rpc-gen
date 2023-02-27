@@ -75,15 +75,17 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, 
 		}
 		logicFilename = fmt.Sprintf("%s_%s_handler", ctx.GetServiceName().Source(), logicFilename)
 
+		pbImport := fmt.Sprintf(`"%v"`, ctx.GetPb().Package)
+
 		filename := filepath.Join(dir.Filename, logicFilename+".go")
-		functions, impList, err := g.genLogicFunction(service, proto.PbPackage, logicName, rpc, c.VarStringTypeMap)
+		functions, impList, err := g.genLogicFunction(service, proto.PbPackage, logicName, rpc, c.VarStringTypeMap, pbImport)
 		if err != nil {
 			return err
 		}
 
 		imports := collection.NewSet()
 		//imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetSvc().Package))
-		imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetPb().Package))
+		//imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetPb().Package))
 		for _, item := range impList {
 			imports.AddStr(fmt.Sprintf(`"%v"`, item))
 		}
@@ -131,15 +133,17 @@ func (g *Generator) genLogicGroup(ctx DirContext, proto parser.Proto, cfg *conf.
 				return err
 			}
 
+			pbImport := fmt.Sprintf(`"%v"`, ctx.GetPb().Package)
+
 			filename = filepath.Join(dir.Filename, serviceDir, logicFilename+".go")
-			functions, impList, err := g.genLogicFunction(serviceName, proto.PbPackage, logicName, rpc, c.VarStringTypeMap)
+			functions, impList, err := g.genLogicFunction(serviceName, proto.PbPackage, logicName, rpc, c.VarStringTypeMap, pbImport)
 			if err != nil {
 				return err
 			}
 
 			imports := collection.NewSet()
 			imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetSvc().Package))
-			imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetPb().Package))
+			//imports.AddStr(fmt.Sprintf(`"%v"`, ctx.GetPb().Package))
 			for _, item := range impList {
 				imports.AddStr(fmt.Sprintf(`"%v"`, item))
 			}
@@ -161,7 +165,7 @@ func (g *Generator) genLogicGroup(ctx DirContext, proto parser.Proto, cfg *conf.
 	return nil
 }
 
-func (g *Generator) genLogicFunction(serviceName, goPackage, logicName string, rpc *parser.RPC, typeMap map[string]string) (string, []string, error) {
+func (g *Generator) genLogicFunction(serviceName, goPackage, logicName string, rpc *parser.RPC, typeMap map[string]string, pbImport string) (string, []string, error) {
 	var impList []string
 
 	functions := make([]string, 0)
@@ -180,7 +184,8 @@ func (g *Generator) genLogicFunction(serviceName, goPackage, logicName string, r
 			if path, ok := typeMap["types"]; ok {
 				impList = append(impList, path)
 			}
-			return fmt.Sprintf("*%s.%s", "types", parser.CamelCase(strings.Trim(mess, "google.protobuf.")))
+			values := strings.Split(mess, ".")
+			return fmt.Sprintf("*%s.%s", "types", values[len(values)-1])
 		} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
 			pkgKey := strings.Split(mess, ".")[0]
 			if path, ok := typeMap[pkgKey]; ok {
@@ -193,6 +198,7 @@ func (g *Generator) genLogicFunction(serviceName, goPackage, logicName string, r
 		} else if strings.HasPrefix(mess, goPackage+".") {
 			mess = strings.Split(mess, ".")[1]
 		}
+		impList = append(impList, pbImport)
 		return fmt.Sprintf("*%s.%s", goPackage, parser.CamelCase(mess))
 	}()
 	if err != nil {
@@ -205,7 +211,8 @@ func (g *Generator) genLogicFunction(serviceName, goPackage, logicName string, r
 			if path, ok := typeMap["types"]; ok {
 				impList = append(impList, path)
 			}
-			return fmt.Sprintf("%s.%s", "types", parser.CamelCase(strings.Trim(mess, "google.protobuf.")))
+			values := strings.Split(mess, ".")
+			return fmt.Sprintf("%s.%s", "types", values[len(values)-1])
 		} else if strings.Contains(mess, ".") && !strings.HasPrefix(mess, goPackage+".") {
 			pkgKey := strings.Split(mess, ".")[0]
 			if path, ok := typeMap[pkgKey]; ok {
@@ -218,6 +225,7 @@ func (g *Generator) genLogicFunction(serviceName, goPackage, logicName string, r
 		} else if strings.HasPrefix(mess, goPackage+".") {
 			mess = strings.Split(mess, ".")[1]
 		}
+		impList = append(impList, pbImport)
 		return fmt.Sprintf("%s.%s", goPackage, parser.CamelCase(mess))
 	}()
 	if err != nil {
