@@ -17,10 +17,11 @@ import (
 )
 
 const logicFunctionTemplate = `{{if .hasComment}}{{.comment}}{{end}}
-func (c *{{.packageName}}Core) {{.method}} ({{if .hasReq}}in {{.request}}{{if .stream}},stream {{.streamBody}}{{end}}{{else}}stream {{.streamBody}}{{end}}) ({{if .hasReply}}{{.response}},{{end}} error) {
+func (c *{{.packageName}}Core) {{.method}} ({{if .hasReq}}in {{.request}}{{if .stream}},stream {{.streamBody}}{{end}}{{else}}stream {{.streamBody}}{{end}}) ({{if .hasReply}}res {{.response}},{{end}} err error) {
 	// todo: add your logic here and delete this line
+	{{if .stream}}return errors.New("Unimplemented"){{else}}
 	return nil, errors.New("Unimplemented")
-	return {{if .hasReply}}&{{.responseType}}{},{{end}} nil
+	return {{if .hasReply}}&{{.responseType}}{},{{end}} nil{{end}}
 }
 `
 
@@ -75,10 +76,8 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, 
 		}
 		logicFilename = fmt.Sprintf("%s_%s_handler", ctx.GetServiceName().Source(), logicFilename)
 
-		pbImport := fmt.Sprintf(`"%v"`, ctx.GetPb().Package)
-
 		filename := filepath.Join(dir.Filename, logicFilename+".go")
-		functions, impList, err := g.genLogicFunction(service, proto.PbPackage, logicName, rpc, c.VarStringTypeMap, pbImport)
+		functions, impList, err := g.genLogicFunction(service, proto.PbPackage, logicName, rpc, c.VarStringTypeMap, ctx.GetPb().Package)
 		if err != nil {
 			return err
 		}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "/gateway";
+
+package gateway;
+
+enum TLConstructor {
+  CRC32_UNKNOWN = 0;
+  CRC32_gateway_connect = 645953552;
+}
+
+message TL_gateway_connect {
+   int64 auth_key_id = 1;
+   int64 session_id = 2;
+}
+
+message TL_clientData {
+  int64 constructor = 1;
+  bytes data = 2;
+}
+
+message TL_serverData {
+  int64 constructor = 1;
+  bytes data = 2;
+}
+
+service Gateway {
+  rpc gateway_connect (stream TL_clientData) returns (stream TL_serverData);
+  rpc Ping(TL_clientData) returns (TL_serverData);
+}

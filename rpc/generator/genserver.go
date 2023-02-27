@@ -21,14 +21,15 @@ const functionTemplate = `
 func (s *Service) {{.method}} ({{if .notStream}}ctx context.Context,{{if .hasReq}} in {{.request}}{{end}}{{else}}{{if .hasReq}} in {{.request}},{{end}}stream {{.streamBody}}{{end}}) ({{if .notStream}}{{.response}},{{end}}error) {
 	c := {{.logicPkg}}.New{{.logicName}}({{if .notStream}}ctx,{{else}}stream.Context(),{{end}}s.svcCtx)
 
-	c.Logger.Debugf("{{.handler}} - metadata: %s, request: %s", DebugString(c.MD), DebugString(in))
-	r, err := c.{{.method}}({{if .hasReq}}in{{if .stream}} ,stream{{end}}{{else}}{{if .stream}}stream{{end}}{{end}})
+	c.Logger.Debugf("{{.handler}} - metadata: %s, request: {{if .notStream}}%s{{else}}stream{{end}}", DebugString(c.MD){{if .notStream}}, DebugString(in){{end}}) 
+	{{if .notStream}}r, {{end}}err := c.{{.method}}({{if .hasReq}}in{{if .stream}} ,stream{{end}}{{else}}{{if .stream}}stream{{end}}{{end}})
 	if err != nil {
-		return nil, err
+		c.Logger.Debugf("{{.handler}} - error: %s", err.Error())
+		return {{if .notStream}}nil, {{end}}err
 	}
 
-	c.Logger.Debugf("{{.handler}} - reply: %s", DebugString(r))
-	return r, err
+	{{if .notStream}}c.Logger.Debugf("{{.handler}} - reply: %s", DebugString(r)){{end}}
+	return {{if .notStream}}r, {{end}}err
 }
 `
 
@@ -221,7 +222,7 @@ func (g *Generator) genServerInCompatibility(ctx DirContext, proto parser.Proto,
 	//}
 	serverFilename := ctx.GetServiceName().Lower() + "_service_impl"
 	serverFile := filepath.Join(dir.Filename, serverFilename+".go")
-	funcList, impList, err := g.genFunctions(proto.PbPackage, service, false, c.VarStringTypeMap, pbImport)
+	funcList, impList, err := g.genFunctions(proto.PbPackage, service, false, c.VarStringTypeMap, ctx.GetPb().Package)
 	if err != nil {
 		return err
 	}
