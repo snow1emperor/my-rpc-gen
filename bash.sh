@@ -1,3 +1,4 @@
+PWD=`pwd`
 GO_CTR_PATH=./bin/macapp
 
 GOPATH=$HOME/go
@@ -5,12 +6,12 @@ GOGOPROTO_PATH=$GOPATH/pkg/mod/github.com/gogo/protobuf@v1.3.2/protobuf
 
 CUSTOM_PATH=example/.
 
-SRC_PATH=example/idgen.proto
-DST_DIR=./example/idgen
+SRC_PATH=example/my_svc.proto
+DST_DIR=./example/my_svc
 
 
 $GO_CTR_PATH rpc protoc $SRC_PATH \
-  -I=${PWD} \
+  -I=$PWD \
   -I=$GOGOPROTO_PATH \
   -I=$CUSTOM_PATH \
   --gogo_dst=$DST_DIR \
