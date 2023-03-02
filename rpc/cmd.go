@@ -37,6 +37,14 @@ var (
 		Args:    cobra.ExactValidArgs(1),
 		RunE:    cli.ZRPC,
 	}
+
+	proxyCmd = &cobra.Command{
+		Use:     "proxy",
+		Short:   "Generate grpc proxy",
+		Example: "goctl rpc proxy --proxy_out=. --proxy_dst=. --type_map=.",
+		Args:    cobra.ExactValidArgs(0),
+		RunE:    cli.Proxy,
+	}
 )
 
 func init() {
@@ -69,6 +77,11 @@ func init() {
 	//newCmd.Flags().BoolVarP(&cli.VarBoolVerbose, "verbose", "v", false, "Enable log output")
 	//newCmd.Flags().MarkHidden("go_opt")
 	//newCmd.Flags().MarkHidden("go-grpc_opt")
+
+	proxyCmd.Flags().StringVar(&cli.VarStringProxyDst, "proxy_dst", "", "proxy_dst")
+	proxyCmd.Flags().StringVar(&cli.VarStringProxyTypes, "proxy_types", "", "proxy_types")
+	proxyCmd.Flags().StringSliceVar(&cli.VarStringProxyOut, "proxy_out", nil, "proxy_out")
+	proxyCmd.Flags().StringSliceVar(&cli.VarStringProxyTypeMap, "proxy_type_map", nil, "proxy_type_map")
 
 	//protocCmd.Flags().BoolVarP(&cli.VarBoolMultiple, "multiple", "m", false,
 	//	"Generated in multiple rpc service mode")
@@ -115,5 +128,6 @@ func init() {
 	//
 	//Cmd.AddCommand(newCmd)
 	Cmd.AddCommand(protocCmd)
+	Cmd.AddCommand(proxyCmd)
 	//Cmd.AddCommand(templateCmd)
 }
