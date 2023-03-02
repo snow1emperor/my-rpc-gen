@@ -9,6 +9,7 @@ import (
 	"github.com/zeromicro/go-zero/tools/goctl/util"
 	"github.com/zeromicro/go-zero/tools/goctl/util/pathx"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -100,14 +101,16 @@ func (gen ProxyGenerator) Generate(ctx *ProxyContext) error {
 						pkgKey := strings.Split(mess, ".")[0]
 						if path, ok := ctx.TypeMap[pkgKey]; ok {
 							imports.AddStr(fmt.Sprintf(`	"%s"`, path))
-							return fmt.Sprintf("%s", parser.CamelCase(mess))
+							return fmt.Sprintf("%s", mess)
 						} else {
 							err = errors.New(fmt.Sprintf("request type %s must defined in flags type_map", pkgKey))
 							return ""
 						}
 					} else if strings.HasPrefix(mess, pt.PbPackage+".") {
+						imports.AddStr(fmt.Sprintf(`	"%s"`, val))
 						return mess
 					}
+					imports.AddStr(fmt.Sprintf(`	"%s"`, val))
 					return fmt.Sprintf("%s.%s", pt.PbPackage, parser.CamelCase(mess))
 				}
 
@@ -118,7 +121,7 @@ func (gen ProxyGenerator) Generate(ctx *ProxyContext) error {
 					fmt.Println("can`t parse: ", item.RequestType, " or ", item.ReturnsType, " - skip value")
 					continue
 				}
-				imports.AddStr(fmt.Sprintf(`	"%s"`, val))
+
 				paths.AddStr(fmt.Sprintf(PathTemplate,
 					fmt.Sprintf("TLConstructor_%s_%s", pt.PbPackage, item.Name),
 					fmt.Sprintf("/%s.%s/%s", pt.PbPackage, srv.Name, item.Name),
@@ -134,10 +137,14 @@ func (gen ProxyGenerator) Generate(ctx *ProxyContext) error {
 	if err != nil {
 		return err
 	}
+	importsSrt := imports.KeysStr()
+	sort.Strings(importsSrt)
+	pathsSrt := paths.KeysStr()
+	sort.Strings(pathsSrt)
 	if err = util.With("proxy").GoFmt(true).Parse(text).SaveTo(map[string]interface{}{
 		"head":        head,
-		"imports":     strings.Join(imports.KeysStr(), pathx.NL),
-		"paths":       strings.Join(paths.KeysStr(), pathx.NL),
+		"imports":     strings.Join(importsSrt, pathx.NL),
+		"paths":       strings.Join(pathsSrt, pathx.NL),
 		"packageName": filePackage,
 	}, regFile, true); err != nil {
 		return err
@@ -147,9 +154,11 @@ func (gen ProxyGenerator) Generate(ctx *ProxyContext) error {
 	if err != nil {
 		return err
 	}
+	constructorsSrt := constructors.KeysStr()
+	sort.Strings(constructorsSrt)
 	if err = util.With("proxy").GoFmt(false).Parse(text).SaveTo(map[string]interface{}{
 		"head":         head,
-		"constructors": strings.Join(constructors.KeysStr(), pathx.NL),
+		"constructors": strings.Join(constructorsSrt, pathx.NL),
 		"packageName":  filePackage,
 	}, conFile, true); err != nil {
 		return err

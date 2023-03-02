@@ -3,7 +3,6 @@
 package {{.packageName}}
 
 import (
-	"context"
 	"github.com/gogo/protobuf/proto"
 	"github.com/zeromicro/go-zero/core/logx"
 
