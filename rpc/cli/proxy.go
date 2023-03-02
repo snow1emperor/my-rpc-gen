@@ -8,6 +8,8 @@ import (
 )
 
 var (
+	// VarStringProxyClientName ...
+	VarStringProxyClientName string
 	// VarStringProxyDst ...
 	VarStringProxyDst string
 	// VarStringProxyTypes ...
@@ -34,6 +36,7 @@ func Proxy(_ *cobra.Command, args []string) error {
 		typeMap["types"] = VarStringProxyTypes
 	}
 	var ctx = &genproxy.ProxyContext{
+		Pkg:     VarStringProxyClientName,
 		Dst:     dst,
 		Out:     VarStringProxyOut,
 		TypeMap: typeMap,

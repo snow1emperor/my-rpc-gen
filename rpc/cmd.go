@@ -78,6 +78,7 @@ func init() {
 	//newCmd.Flags().MarkHidden("go_opt")
 	//newCmd.Flags().MarkHidden("go-grpc_opt")
 
+	proxyCmd.Flags().StringVar(&cli.VarStringProxyClientName, "proxy_client_name", "", "proxy_client_name")
 	proxyCmd.Flags().StringVar(&cli.VarStringProxyDst, "proxy_dst", "", "proxy_dst")
 	proxyCmd.Flags().StringVar(&cli.VarStringProxyTypes, "proxy_types", "", "proxy_types")
 	proxyCmd.Flags().StringSliceVar(&cli.VarStringProxyOut, "proxy_out", nil, "proxy_out")

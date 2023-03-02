@@ -6,6 +6,7 @@ import (
 )
 
 type ProxyContext struct {
+	Pkg     string
 	Dst     string
 	Out     []string
 	TypeMap map[string]string

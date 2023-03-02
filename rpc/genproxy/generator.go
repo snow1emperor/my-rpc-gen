@@ -49,6 +49,9 @@ func (gen ProxyGenerator) Generate(ctx *ProxyContext) error {
 		filePackage  string
 	)
 	filePackage = func() string {
+		if ctx.Pkg != "" {
+			return ctx.Pkg
+		}
 		var path = ctx.Dst
 		if strings.Contains(path, "/") {
 			var values = strings.Split(path, "/")
