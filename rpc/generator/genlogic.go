@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/snow1emperor/my-rpc-gen/rpc/parser"
 	"github.com/zeromicro/go-zero/core/collection"
@@ -74,7 +75,12 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, 
 		if err != nil {
 			return err
 		}
-		logicFilename = fmt.Sprintf("%s_%s_handler", ctx.GetServiceName().Source(), logicFilename)
+		if strings.Contains(logicFilename, ctx.GetServiceName().Source()) {
+			logicFilename = strings.Replace(logicFilename, ctx.GetServiceName().Source(), "", 1)
+			logicFilename = firstLetterToLower(logicFilename)
+		}
+
+		logicFilename = fmt.Sprintf("%s.%s_handler", ctx.GetServiceName().Source(), logicFilename)
 
 		filename := filepath.Join(dir.Filename, logicFilename+".go")
 		functions, impList, err := g.genLogicFunction(service, proto.PbPackage, logicName, rpc, c.VarStringTypeMap, ctx.GetPb().Package)
@@ -103,6 +109,18 @@ func (g *Generator) genLogicInCompatibility(ctx DirContext, proto parser.Proto, 
 		}
 	}
 	return nil
+}
+
+func firstLetterToLower(s string) string {
+
+	if len(s) == 0 {
+		return s
+	}
+
+	r := []rune(s)
+	r[0] = unicode.ToLower(r[0])
+
+	return string(r)
 }
 
 func (g *Generator) genLogicGroup(ctx DirContext, proto parser.Proto, cfg *conf.Config, c *ZRpcContext) error {

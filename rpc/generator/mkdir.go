@@ -243,7 +243,15 @@ func mkdir(ctx *ctx.ProjectContext, proto parser.Proto, _ *conf.Config, c *ZRpcC
 			return nil, err
 		}
 	}
-	serviceName := strings.TrimSuffix(proto.Name, filepath.Ext(proto.Name))
+	var serviceName = proto.PbPackage
+	if len(serviceName) == 0 {
+		values := strings.Split(proto.Name, ".")
+		if len(values) > 1 {
+			serviceName = values[0]
+		} else {
+			serviceName = strings.TrimSuffix(proto.Name, filepath.Ext(proto.Name))
+		}
+	}
 	return &defaultDirContext{
 		ctx:         ctx,
 		inner:       inner,

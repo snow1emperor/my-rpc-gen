@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package payments;
+
+option go_package ="./payments";
+
+service Bitcoin {
+  rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse) {}
+  rpc Send (SendRequest) returns (SendResponse) {}
+}
+message GetBalanceRequest {
+  string address = 1;
+}
+message GetBalanceResponse {
+  int64 balance = 1;
+}
+message SendRequest {
+  string from_addr = 1;
+  string to_addr = 2;
+  int64 amount = 3;
+}
+message SendResponse {
+  bool success = 1;
+  string message = 2;
+  string txid = 3;
+}

@@ -21,7 +21,7 @@ const functionTemplate = `
 func (s *Service) {{.method}} ({{if .notStream}}ctx context.Context,{{if .hasReq}} in {{.request}}{{end}}{{else}}{{if .hasReq}} in {{.request}},{{end}}stream {{.streamBody}}{{end}}) ({{if .notStream}}{{.response}},{{end}}error) {
 	c := {{.logicPkg}}.New{{.logicName}}({{if .notStream}}ctx,{{else}}stream.Context(),{{end}}s.svcCtx)
 
-	c.Logger.Debugf("{{.handler}} - metadata: %s, request: {{if .notStream}}%s{{else}}stream{{end}}", DebugString(c.MD){{if .notStream}}, DebugString(in){{end}}) 
+	c.Logger.Debugf("{{.handler}} - metadata: %s, request: {{if .notStream}}%s{{else}}stream{{end}}", c.MD.DebugString(){{if .notStream}}, in.DebugString(){{end}}) 
 	{{if .notStream}}r, {{end}}err := c.{{.method}}({{if .hasReq}}in{{if .stream}} ,stream{{end}}{{else}}{{if .stream}}stream{{end}}{{end}})
 	if err != nil {
 		c.Logger.Debugf("{{.handler}} - error: %s", err.Error())

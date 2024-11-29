@@ -1,5 +1,5 @@
 PWD=`pwd`
-GO_CTR_PATH=./bin/macapp
+GO_CTR_PATH=./bin/linuxapp
 
 GOPATH=$HOME/go
 
