@@ -6,7 +6,7 @@ GOGOPROTO_PATH=$GOPATH/pkg/mod/github.com/gogo/protobuf@v1.3.2/protobuf
 
 CUSTOM_PATH=example/.
 
-SRC_PATH=example/payments.proto
+SRC_PATH=example/payments.tl.proto
 DST_DIR=./example/payments
 
 

@@ -90,7 +90,7 @@ func init() {
 	protocCmd.Flags().StringVar(&cli.VarStringTypes, "types", "github.com/gogo/protobuf/types", "types package")
 	protocCmd.Flags().StringVar(&cli.VarStringCommandsPkg, "commands_pkg", "", "commands package")
 	protocCmd.Flags().StringVar(&cli.VarStringGogoDst, "gogo_dst", "", "source to generate")
-	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGogoOut, "gogo_out", []string{"skip"}, "gogo settings")
+	protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGogoOut, "gogo_out", []string{""}, "gogo settings")
 	//protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGoOut, "go_out", nil, "")
 	//protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGoGRPCOut, "go-grpc_out", nil, "")
 	//protocCmd.Flags().StringSliceVar(&cli.VarStringSliceGoOpt, "go_opt", nil, "")
